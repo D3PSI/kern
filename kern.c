@@ -14,31 +14,29 @@
 #define BYTES_PER_CELL 2
 
 unsigned short* term_buf;
-unsigned int vga_index;
 
-void clear_screen(void) {
-    int index = 0;
-    while(index < COLS * ROWS * BYTES_PER_CELL) {
-        term_buf[index] = ' ';
-        index += 2;
+void clear(void) {
+    for(int i = 0; i < COLS * ROWS * BYTES_PER_CELL; i++) {
+        term_buf[i] = ' ';
     }
 }
 
-void print_string(const char* _str, unsigned char _color) {
-    int index = 0;
-    while(_str[index]) {
-        term_buf[vga_index] = (unsigned short)_str[index] | (unsigned short)_color << 8;
+void println(const char* _str, unsigned char _color) {
+    static int index = 0;
+    for(int i = 0; _str[i]; i++) {
+        term_buf[index] = (unsigned short)_str[i] | (unsigned short)_color << 8;
         index++;
-        vga_index++;
     }
+    index += COLS - (index % COLS);
 }
 
 int main(void) {
     term_buf = (unsigned short*)VGA_ADDRESS;
-    vga_index = 0;
-    clear_screen();
-    print_string("This just fucking worked, damn", RED);
-    vga_index = 80;
-    print_string("Bye", GREEN);
+    clear();
+    println("This just fucking worked, damn", RED);
+    println("Bye", GREEN);
+    for(;;) {
+        println("still running", WHITE);
+    }
     return 0;
 }

@@ -13,7 +13,6 @@ start:
         cli
         mov esp, stack_space
         call main
-        hlt
 
 section .bss
 resb 8192
