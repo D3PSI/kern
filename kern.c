@@ -1,42 +1,36 @@
-// video memory buffer start address
-#define VGA_ADDRESS 0xB8000
+#define VGA_BUF_ADDR 0x000B8000
+#define VGA_BUF_COLS 80
+#define VGA_BUF_ROWS 25
 
-// VGA supports 16 colors
-#define BLACK 0
-#define GREEN 2
-#define RED 4
-#define YELLOW 14
-#define WHITE 15
+#define VGA_BLACK 0
+#define VGA_GREEN 2
+#define VGA_RED 4
+#define VGA_YELLOW 14
+#define VGA_WHITE 15
 
-// video buffer dimensions 
-#define COLS 80
-#define ROWS 25
-#define BYTES_PER_CELL 2
+unsigned short* vga_buf;
 
-unsigned short* term_buf;
+void init_vga_buf() { vga_buf = (unsigned short*)VGA_BUF_ADDR; }
 
 void clear(void) {
-    for(int i = 0; i < COLS * ROWS * BYTES_PER_CELL; i++) {
-        term_buf[i] = ' ';
+    for (int i = 0; i < VGA_BUF_COLS * VGA_BUF_ROWS; i++) {
+        vga_buf[i] = ' ';
     }
 }
 
 void println(const char* _str, unsigned char _color) {
     static int index = 0;
-    for(int i = 0; _str[i]; i++) {
-        term_buf[index] = (unsigned short)_str[i] | (unsigned short)_color << 8;
+    for (int i = 0; _str[i]; i++) {
+        vga_buf[index] = (unsigned short)_str[i] | (unsigned short)_color << 8;
         index++;
     }
-    index += COLS - (index % COLS);
+    index += VGA_BUF_COLS - (index % VGA_BUF_COLS);
 }
 
 int main(void) {
-    term_buf = (unsigned short*)VGA_ADDRESS;
+    init_vga_buf();
     clear();
-    println("This just fucking worked, damn", RED);
-    println("Bye", GREEN);
-    for(;;) {
-        println("still running", WHITE);
-    }
+    println("This just fucking worked, damn", VGA_RED);
+    println("Bye", VGA_GREEN);
     return 0;
 }
