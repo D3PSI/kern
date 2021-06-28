@@ -54,3 +54,4 @@ dkms.conf
 build/
 dist/
 zig-cache
+zig-out
