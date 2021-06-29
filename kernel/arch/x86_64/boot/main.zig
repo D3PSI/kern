@@ -35,107 +35,113 @@ export fn kern_start() callconv(.Naked) noreturn {
 
 fn check_multiboot() usize {
     return asm volatile (
-        \\ cmp eax, 0x36d76289
+        \\ cmp 0x36d76289, %%eax
         \\ jne .no_multiboot
-        \\ mov rax, 1
+        \\ mov 1, %[ret]
         \\ ret
         \\ .no_multiboot:
-        \\ mov rax, 0
+        \\ mov 0, %[ret]
         \\ ret
-        : [ret] "={rax}" (-> usize)
+        : [ret] "=r" (-> usize)
+        :
+        : "%eax"
     );
 }
 
 fn check_cpuid() usize {
     return asm volatile (
         \\ pushfd
-        \\ pop eax
-        \\ mov ecx, eax
-        \\ xor eax, 1 << 21
-        \\ push eax
+        \\ pop %%eax
+        \\ mov %%eax, %%ecx
+        \\ xor 1 << 21, %%eax
+        \\ push %%eax
         \\ popfd
         \\ pushfd
-        \\ pop eax
-        \\ push ecx
+        \\ pop %%eax
+        \\ push %%ecx
         \\ popfd
-        \\ cmp eax, ecx
+        \\ cmp %%ecx, %%eax
         \\ je .no_cpuid
-        \\ mov rax, 1
+        \\ mov 1, %[ret]
         \\ ret
         \\ .no_cpuid:
-        \\ mov rax, 0
+        \\ mov 0, %[ret]
         \\ ret
-        : [ret] "={rax}" (-> usize)
+        : [ret] "=r" (-> usize)
+        :
+        : "%eax", "%ecx"
     );
 }
 
 fn check_long_mode() usize {
     return asm volatile (
-        \\ mov eax, 0x80000000
+        \\ mov 0x80000000, %%eax
         \\ cpuid
-        \\ cmp eax, 0x80000001
+        \\ cmp 0x80000001, %%eax
         \\ jb .no_long_mode
-        \\ mov eax, 0x80000001
+        \\ mov 0x80000001, %%eax
         \\ cpuid
-        \\ test edx, 1 << 29
+        \\ test 1 << 29, %%edx
         \\ jz .no_long_mode
-        \\ mov rax, 1
+        \\ mov 1, %[ret]
         \\ ret
         \\ .no_long_mode:
-        \\ mov rax, 0
+        \\ mov 0, %[ret]
         \\ ret
-        : [ret] "={rax}" (-> usize)
+        : [ret] "=r" (-> usize)
+        :
+        : "%eax", "%edx"
     );
 }
 
 fn setup_page_tables() void {
     asm volatile (
-        \\ mov eax, page_table_l3
-        \\ or eax, 0b11
-        \\ mov [page_table_l4], eax
-        \\ mov eax, page_table_l2
-        \\ or eax, 0b11
-        \\ mov [page_table_l3], eax
-        \\ mov ecx, 0
+        \\ mov page_table_l3, %%eax
+        \\ or 0b11, %%eax
+        \\ mov %%eax, [page_table_l4]
+        \\ mov page_table_l2, %%eax
+        \\ or 0b11, %%eax
+        \\ mov %%eax, [page_table_l3]
+        \\ mov 0, %%ecx
         \\ .loop:
-        \\ mov eax, 0x200000
-        \\ mul ecx
-        \\ or eax, 0b10000011
-        \\ mov [page_table_l2 + ecx * 8], eax
-        \\ inc ecx
-        \\ cmp ecx, 512
+        \\ mov 0x200000, %%eax
+        \\ mul %%ecx
+        \\ or 0b10000011, %%eax
+        \\ mov %%eax, page_table_l2(,%%ecx, 8)
+        \\ inc %%ecx
+        \\ cmp 512, %%ecx
         \\ jne .loop
         \\ ret
-    );
+        ::: "%eax", "%ecx");
 }
 
 fn enable_paging() void {
     asm volatile (
-        \\ mov eax, page_table_l4
-        \\ mov cr3, eax
-        \\ mov eax, cr4
-        \\ or eax, 1 << 5
-        \\ mov cr4, eax
-        \\ mov ecx, 0xC0000080
+        \\ mov page_table_l4, %%eax
+        \\ mov %%eax, %%cr3
+        \\ mov %%cr4, %%eax
+        \\ or 1 << 5, %%eax
+        \\ mov %%eax, %%cr4
+        \\ mov 0xC0000080, %%ecx
         \\ rdmsr
-        \\ or eax, 1 << 8
+        \\ or 1 << 8, %%eax
         \\ wrmsr
-        \\ mov eax, cr0
-        \\ or eax, 1 << 31
-        \\ mov cr0, eax
+        \\ mov %%cr0, %%eax
+        \\ or 1 << 31, %%eax
+        \\ mov %%eax, %%cr0
         \\ ret
-    );
+        ::: "%eax", "%cr3", "%cr4", "%ecx", "%cr0");
 }
 
 fn clear_data_segment_registers() void {
     asm volatile (
-        \\ mov ax, 0
-        \\ mov ss, ax
-        \\ mov ds, ax
-        \\ mov es, ax
-        \\ mov fs, ax
-        \\ mov gs, ax
-    );
+        \\ mov 0, %%ax
+        \\ mov %%ax, %%ss
+        \\ mov %%ax, %%ds
+        \\ mov %%ax, %%es
+        \\ mov %%ax, %%fs
+        \\ mov %%ax, %%gs
+        ::: "%ax", "%ss", "%ds", "%es", "%fs", "%gs");
 }
 
 fn kern_init() void {
